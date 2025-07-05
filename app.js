@@ -4,6 +4,107 @@ document.addEventListener('DOMContentLoaded', function () {
     const taskList = document.getElementById('taskList');
     const tasksPerPage = 5;
     let currentPage = 1;
+    // Export dropdown button
+
+    // Toast container
+    const toastContainer = document.createElement('div');
+    toastContainer.style.position = 'fixed';
+    toastContainer.style.top = '20px';
+    toastContainer.style.right = '20px';
+    toastContainer.style.zIndex = '9999';
+    document.body.appendChild(toastContainer);
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type} border-0 show`;
+        toast.role = 'alert';
+        toast.ariaLive = 'assertive';
+        toast.ariaAtomic = 'true';
+        toast.style.minWidth = '200px';
+        toast.style.marginBottom = '10px';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        toastContainer.appendChild(toast);
+
+        // Remove toast after 2 seconds or on close
+        setTimeout(() => {
+            toast.classList.remove('show');
+            toast.classList.add('fade');
+            setTimeout(() => toast.remove(), 500);
+        }, 2000);
+
+        toast.querySelector('.btn-close').onclick = () => toast.remove();
+    }
+
+    // Animation helpers
+    function animateAdd(li) {
+        li.style.animation = 'fadeIn 0.5s';
+        li.addEventListener('animationend', () => {
+            li.style.animation = '';
+        }, { once: true });
+    }
+    function animateDelete(li, callback) {
+        li.style.animation = 'fadeOut 0.5s';
+        li.addEventListener('animationend', () => {
+            callback();
+        }, { once: true });
+    }
+
+    // Add CSS for fadeIn/fadeOut
+    const style = document.createElement('style');
+    style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95);}
+        to { opacity: 1; transform: scale(1);}
+    }
+    @keyframes fadeOut {
+        from { opacity: 1; transform: scale(1);}
+        to { opacity: 0; transform: scale(0.95);}
+    }
+    `;
+    document.head.appendChild(style);
+    // Make sure Bootstrap JS and Popper.js are included in your HTML for dropdowns to work
+    const exportDropdownDiv = document.createElement('div');
+    exportDropdownDiv.className = 'dropdown mb-2 ml-2';
+
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'btn btn-secondary btn-sm dropdown-toggle';
+    exportBtn.type = 'button';
+    exportBtn.id = 'exportDropdown';
+    exportBtn.setAttribute('data-bs-toggle', 'dropdown');
+    exportBtn.setAttribute('aria-haspopup', 'true');
+    exportBtn.setAttribute('aria-expanded', 'false');
+    exportBtn.textContent = 'Export';
+
+    const exportMenu = document.createElement('div');
+    exportMenu.className = 'dropdown-menu';
+    exportMenu.setAttribute('aria-labelledby', 'exportDropdown');
+
+    const formats = [
+        { label: 'Export as JSON', type: 'json' },
+        { label: 'Export as Raw Text', type: 'txt' },
+        { label: 'Export as SQL', type: 'sql' },
+        { label: 'Export as CSV', type: 'csv' }
+    ];
+
+    formats.forEach(fmt => {
+        const item = document.createElement('a');
+        item.className = 'dropdown-item';
+        item.href = '#';
+        item.textContent = fmt.label;
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+            exportTasks(fmt.type);
+        });
+        exportMenu.appendChild(item);
+    });
+
+    exportDropdownDiv.appendChild(exportBtn);
+    exportDropdownDiv.appendChild(exportMenu);
 
     // Add search box
     const searchInput = document.createElement('input');
@@ -11,6 +112,39 @@ document.addEventListener('DOMContentLoaded', function () {
     searchInput.className = 'form-control form-control-sm mb-2';
     searchInput.placeholder = 'Search tasks...';
     taskList.parentNode.insertBefore(searchInput, taskList);
+
+    // Insert export dropdown before the search input
+    taskList.parentNode.insertBefore(exportDropdownDiv, searchInput);
+
+    function exportTasks(type) {
+        let dataStr = '';
+        let filename = 'tasks';
+        if (type === 'json') {
+            dataStr = JSON.stringify(tasks, null, 2);
+            filename += '.json';
+        } else if (type === 'txt') {
+            dataStr = tasks.map(t => `${t.text}${t.dueDate ? ' (Due: ' + t.dueDate + ')' : ''}${t.completed ? ' [Completed]' : ''}`).join('\n');
+            filename += '.txt';
+        } else if (type === 'csv') {
+            dataStr = 'Task,Completed,Due Date\n' + tasks.map(t =>
+                `"${t.text.replace(/"/g, '""')}",${t.completed ? 'Yes' : 'No'},"${t.dueDate || ''}"`
+            ).join('\n');
+            filename += '.csv';
+        } else if (type === 'sql') {
+            dataStr = 'INSERT INTO tasks (text, completed, due_date) VALUES\n' +
+                tasks.map(t =>
+                    `('${t.text.replace(/'/g, "''")}', ${t.completed ? 1 : 0}, ${t.dueDate ? `'${t.dueDate}'` : 'NULL'})`
+                ).join(',\n') + ';';
+            filename += '.sql';
+        }
+        const blob = new Blob([dataStr], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
 
     // Add filter dropdown for completed/not completed
     const filterSelect = document.createElement('select');
