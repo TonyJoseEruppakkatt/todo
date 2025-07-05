@@ -4,7 +4,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const taskList = document.getElementById('taskList');
     const tasksPerPage = 5;
     let currentPage = 1;
+    // Add search box
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'form-control form-control-sm mb-2';
+    searchInput.placeholder = 'Search tasks...';
+    taskList.parentNode.insertBefore(searchInput, taskList);
 
+    let searchQuery = '';
+
+    searchInput.addEventListener('input', function () {
+        searchQuery = searchInput.value.trim().toLowerCase();
+        currentPage = 1;
+        renderTasks();
+    });
     // Add due date input
     const dueDateInput = document.createElement('input');
     dueDateInput.type = 'date';
@@ -21,12 +34,13 @@ document.addEventListener('DOMContentLoaded', function () {
     let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
     renderTasks();
 
-    // Add Task
-    // Error message element
+    // Add Task 
+    
+    // Due date Error message element
     let errorMsg = document.createElement('div');
     errorMsg.className = 'text-danger mt-2';
     errorMsg.style.display = 'none';
-    addTaskButton.parentNode.insertBefore(errorMsg, addTaskButton.nextSibling);
+    addTaskButton.parentNode.insertBefore(errorMsg, addTaskButton.nextSibling);  
 
     addTaskButton.addEventListener('click', function () {
         const taskText = taskInput.value.trim();
@@ -66,13 +80,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Render tasks with pagination
     function renderTasks() {
         taskList.innerHTML = '';
-        const totalPages = Math.ceil(tasks.length / tasksPerPage) || 1;
+        // Filter tasks based on search query
+        const filteredTasks = tasks.filter(task => task.text.toLowerCase().includes(searchQuery));
+        const totalPages = Math.ceil(filteredTasks.length / tasksPerPage) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
         const startIdx = (currentPage - 1) * tasksPerPage;
-        const endIdx = Math.min(startIdx + tasksPerPage, tasks.length);
+        const endIdx = Math.min(startIdx + tasksPerPage, filteredTasks.length);
 
-        tasks.slice(startIdx, endIdx).forEach((task, idx) => {
-            const realIdx = startIdx + idx;
+        filteredTasks.slice(startIdx, endIdx).forEach((task, idx) => {
+            // Find the real index in the original tasks array
+            const realIdx = tasks.indexOf(filteredTasks[startIdx + idx]);
             const li = document.createElement('li');
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
 
