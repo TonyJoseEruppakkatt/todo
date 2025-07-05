@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const taskList = document.getElementById('taskList');
     const tasksPerPage = 5;
     let currentPage = 1;
+
     // Add search box
     const searchInput = document.createElement('input');
     searchInput.type = 'text';
@@ -11,6 +12,18 @@ document.addEventListener('DOMContentLoaded', function () {
     searchInput.placeholder = 'Search tasks...';
     taskList.parentNode.insertBefore(searchInput, taskList);
 
+    // Add filter dropdown for completed/not completed
+    const filterSelect = document.createElement('select');
+    filterSelect.className = 'form-control form-control-sm mb-2 ml-2';
+    filterSelect.style.width = 'auto';
+    filterSelect.innerHTML = `
+        <option value="all">All Tasks</option>
+        <option value="completed">Completed</option>
+        <option value="not_completed">Not Completed</option>
+    `;
+    searchInput.parentNode.insertBefore(filterSelect, searchInput.nextSibling);
+
+    let filterStatus = 'all';
     let searchQuery = '';
 
     searchInput.addEventListener('input', function () {
@@ -18,6 +31,13 @@ document.addEventListener('DOMContentLoaded', function () {
         currentPage = 1;
         renderTasks();
     });
+
+    filterSelect.addEventListener('change', function () {
+        filterStatus = filterSelect.value;
+        currentPage = 1;
+        renderTasks();
+    });
+
     // Add due date input
     const dueDateInput = document.createElement('input');
     dueDateInput.type = 'date';
@@ -34,14 +54,13 @@ document.addEventListener('DOMContentLoaded', function () {
     let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
     renderTasks();
 
-    // Add Task 
-    
-    // Due date Error message element
+    // Error message element
     let errorMsg = document.createElement('div');
     errorMsg.className = 'text-danger mt-2';
     errorMsg.style.display = 'none';
-    addTaskButton.parentNode.insertBefore(errorMsg, addTaskButton.nextSibling);  
+    addTaskButton.parentNode.insertBefore(errorMsg, addTaskButton.nextSibling);
 
+    // Add Task
     addTaskButton.addEventListener('click', function () {
         const taskText = taskInput.value.trim();
         const dueDate = dueDateInput.value;
@@ -58,7 +77,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         tasks.push({ text: taskText, completed: false, dueDate: dueDate });
         saveTasks();
-        // Go to last page after adding
         currentPage = Math.ceil(tasks.length / tasksPerPage) || 1;
         renderTasks();
         taskInput.value = '';
@@ -72,16 +90,19 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Save tasks to localStorage
     function saveTasks() {
         localStorage.setItem('tasks', JSON.stringify(tasks));
     }
 
-    // Render tasks with pagination
     function renderTasks() {
         taskList.innerHTML = '';
-        // Filter tasks based on search query
-        const filteredTasks = tasks.filter(task => task.text.toLowerCase().includes(searchQuery));
+        // Filter tasks based on search query and filter status
+        let filteredTasks = tasks.filter(task => task.text.toLowerCase().includes(searchQuery));
+        if (filterStatus === 'completed') {
+            filteredTasks = filteredTasks.filter(task => task.completed);
+        } else if (filterStatus === 'not_completed') {
+            filteredTasks = filteredTasks.filter(task => !task.completed);
+        }
         const totalPages = Math.ceil(filteredTasks.length / tasksPerPage) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
         const startIdx = (currentPage - 1) * tasksPerPage;
@@ -185,7 +206,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (confirm('Are you sure you want to delete this task?')) {
                     tasks.splice(realIdx, 1);
                     saveTasks();
-                    // If deleting last item on last page, go to previous page
                     if (startIdx >= tasks.length && currentPage > 1) currentPage--;
                     renderTasks();
                 }
@@ -201,7 +221,6 @@ document.addEventListener('DOMContentLoaded', function () {
             taskList.appendChild(li);
         });
 
-        // Render pagination controls
         renderPagination(totalPages);
     }
 
