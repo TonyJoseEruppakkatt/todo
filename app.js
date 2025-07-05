@@ -22,18 +22,33 @@ document.addEventListener('DOMContentLoaded', function () {
     renderTasks();
 
     // Add Task
+    // Error message element
+    let errorMsg = document.createElement('div');
+    errorMsg.className = 'text-danger mt-2';
+    errorMsg.style.display = 'none';
+    addTaskButton.parentNode.insertBefore(errorMsg, addTaskButton.nextSibling);
+
     addTaskButton.addEventListener('click', function () {
         const taskText = taskInput.value.trim();
         const dueDate = dueDateInput.value;
-        if (taskText !== '') {
-            tasks.push({ text: taskText, completed: false, dueDate: dueDate });
-            saveTasks();
-            // Go to last page after adding
-            currentPage = Math.ceil(tasks.length / tasksPerPage) || 1;
-            renderTasks();
-            taskInput.value = '';
-            dueDateInput.value = '';
+        errorMsg.style.display = 'none';
+        if (taskText === '') {
+            errorMsg.textContent = 'Task cannot be empty.';
+            errorMsg.style.display = 'block';
+            return;
         }
+        if (!dueDate) {
+            errorMsg.textContent = 'Please select a due date.';
+            errorMsg.style.display = 'block';
+            return;
+        }
+        tasks.push({ text: taskText, completed: false, dueDate: dueDate });
+        saveTasks();
+        // Go to last page after adding
+        currentPage = Math.ceil(tasks.length / tasksPerPage) || 1;
+        renderTasks();
+        taskInput.value = '';
+        dueDateInput.value = '';
     });
 
     // Add task on Enter key
