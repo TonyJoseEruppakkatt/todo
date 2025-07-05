@@ -5,6 +5,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const tasksPerPage = 5;
     let currentPage = 1;
 
+    // Add due date input
+    const dueDateInput = document.createElement('input');
+    dueDateInput.type = 'date';
+    dueDateInput.className = 'form-control form-control-sm ml-2';
+    dueDateInput.id = 'dueDateInput';
+    addTaskButton.parentNode.insertBefore(dueDateInput, addTaskButton);
+
     // Create pagination container
     const pagination = document.createElement('nav');
     pagination.className = 'mt-3';
@@ -17,37 +24,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Add Task
     addTaskButton.addEventListener('click', function () {
         const taskText = taskInput.value.trim();
-        if (taskText !== '') {
-            tasks.push({ text: taskText, completed: false });
-            saveTasks();
-            // Go to last page after adding
-            currentPage = Math.ceil(tasks.length / tasksPerPage) || 1;
-            renderTasks();
-            taskInput.value = '';
-        }
-    });
- 
-    // Add task on Enter key
-    taskInput.addEventListener('keyup', function (e) {
-        if (e.key === 'Enter') {
-            addTaskButton.click();
-        }
-    });
-    // Add due date input
-    const dueDateInput = document.createElement('input');
-    dueDateInput.type = 'date';
-    dueDateInput.className = 'form-control form-control-sm ml-2';
-    dueDateInput.id = 'dueDateInput';
-    addTaskButton.parentNode.insertBefore(dueDateInput, addTaskButton);
-
-    // Modify addTaskButton click to include due date
-    addTaskButton.removeEventListener('click', addTaskButton.onclick); // Remove previous if any
-    addTaskButton.addEventListener('click', function () {
-        const taskText = taskInput.value.trim();
         const dueDate = dueDateInput.value;
         if (taskText !== '') {
             tasks.push({ text: taskText, completed: false, dueDate: dueDate });
             saveTasks();
+            // Go to last page after adding
             currentPage = Math.ceil(tasks.length / tasksPerPage) || 1;
             renderTasks();
             taskInput.value = '';
@@ -55,9 +36,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Update renderTasks to show due date
-    const originalRenderTasks = renderTasks;
-    renderTasks = function () {
+    // Add task on Enter key
+    taskInput.addEventListener('keyup', function (e) {
+        if (e.key === 'Enter') {
+            addTaskButton.click();
+        }
+    });
+
+    // Save tasks to localStorage
+    function saveTasks() {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    // Render tasks with pagination
+    function renderTasks() {
         taskList.innerHTML = '';
         const totalPages = Math.ceil(tasks.length / tasksPerPage) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
@@ -118,109 +110,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (newText) {
                         tasks[realIdx].text = newText;
                         tasks[realIdx].dueDate = newDue;
-                        saveTasks();
-                        renderTasks();
-                    } else {
-                        renderTasks();
-                    }
-                }
-            });
-
-            const btnGroup = document.createElement('div');
-
-            const completeBtn = document.createElement('button');
-            completeBtn.className = 'btn btn-success btn-sm mr-2';
-            completeBtn.textContent = 'Complete';
-            if (task.completed) completeBtn.classList.add('d-none');
-
-            const undoBtn = document.createElement('button');
-            undoBtn.className = 'btn btn-warning btn-sm mr-2';
-            undoBtn.textContent = 'Undo';
-            if (!task.completed) undoBtn.classList.add('d-none');
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn btn-danger btn-sm';
-            deleteBtn.textContent = 'Delete';
-
-            completeBtn.addEventListener('click', function () {
-                tasks[realIdx].completed = true;
-                saveTasks();
-                renderTasks();
-            });
-
-            undoBtn.addEventListener('click', function () {
-                tasks[realIdx].completed = false;
-                saveTasks();
-                renderTasks();
-            });
-            const
-
-            deleteBtn.addEventListener('click', function () {
-                if (confirm('Are you sure you want to delete this task?')) {
-                    tasks.splice(realIdx, 1);
-                    saveTasks();
-                    if (startIdx >= tasks.length && currentPage > 1) currentPage--;
-                    renderTasks();
-                }
-            });
-
-            btnGroup.appendChild(completeBtn);
-            btnGroup.appendChild(undoBtn);
-            btnGroup.appendChild(deleteBtn);
-
-            li.appendChild(span);
-            li.appendChild(btnGroup);
-
-            taskList.appendChild(li);
-        });
-
-        renderPagination(totalPages);
-    };
-    // Save tasks to localStorage
-    function saveTasks() {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-    }
-
-    // Render tasks with pagination
-    function renderTasks() {
-        taskList.innerHTML = '';
-        const totalPages = Math.ceil(tasks.length / tasksPerPage) || 1;
-        if (currentPage > totalPages) currentPage = totalPages;
-        const startIdx = (currentPage - 1) * tasksPerPage;
-        const endIdx = Math.min(startIdx + tasksPerPage, tasks.length);
-
-        tasks.slice(startIdx, endIdx).forEach((task, idx) => {
-            const realIdx = startIdx + idx;
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
-
-            const span = document.createElement('span');
-            span.textContent = task.text;
-            if (task.completed) {
-                span.style.textDecoration = 'line-through';
-            }
-
-            // Edit functionality
-            span.style.cursor = 'pointer';
-            span.title = 'Click to edit';
-            span.addEventListener('click', function () {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.value = task.text;
-                input.className = 'form-control form-control-sm';
-                input.addEventListener('keyup', function (e) {
-                    if (e.key === 'Enter') {
-                        finishEdit();
-                    }
-                });
-                input.addEventListener('blur', finishEdit);
-                li.replaceChild(input, span);
-                input.focus();
-
-                function finishEdit() {
-                    const newText = input.value.trim();
-                    if (newText) {
-                        tasks[realIdx].text = newText;
                         saveTasks();
                         renderTasks();
                     } else {
