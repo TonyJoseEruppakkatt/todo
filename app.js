@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
             
             const btnGroup = document.createElement('div');
             const completeBtn = document.createElement('button');
-            completeBtn.className = 'btn btn-success btn-sm';
+            completeBtn.className = `btn ${task.completed ? 'btn-warning' : 'btn-success'} btn-sm`;
             completeBtn.textContent = task.completed ? 'Undo' : 'Complete';
             completeBtn.onclick = () => {
                 task.completed = !task.completed;
@@ -85,9 +85,11 @@ document.addEventListener('DOMContentLoaded', function () {
             deleteBtn.className = 'btn btn-danger btn-sm ms-2';
             deleteBtn.textContent = 'Delete';
             deleteBtn.onclick = () => {
-                tasks = tasks.filter(t => t !== task);
-                saveTasks();
-                renderTasks();
+                if (confirm('Are you sure you want to delete this task?')) {
+                    tasks = tasks.filter(t => t !== task);
+                    saveTasks();
+                    renderTasks();
+                }
             };
 
             btnGroup.appendChild(completeBtn);
@@ -119,13 +121,19 @@ document.addEventListener('DOMContentLoaded', function () {
     addTaskButton.addEventListener('click', () => {
         const text = taskInput.value.trim();
         const dueDate = dueDateInput.value;
-        if (text) {
-            tasks.unshift({ text, dueDate, completed: false });
-            saveTasks();
-            taskInput.value = '';
-            dueDateInput.value = '';
-            renderTasks();
+        if (!text) {
+            showToast('Task cannot be empty.', 'warning');
+            return;
         }
+        if (!dueDate) {
+            showToast('Please select a due date.', 'warning');
+            return;
+        }
+        tasks.unshift({ text, dueDate, completed: false });
+        saveTasks();
+        taskInput.value = '';
+        dueDateInput.value = '';
+        renderTasks();
     });
 
     searchInput.addEventListener('input', () => { currentPage = 1; renderTasks(); });
