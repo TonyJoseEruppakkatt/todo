@@ -119,9 +119,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function exportTasks(type) {
         let dataStr = '';
         let filename = 'tasks';
+        let mimeType = 'text/plain';
+
         if (type === 'json') {
             dataStr = JSON.stringify(tasks, null, 2);
             filename += '.json';
+            mimeType = 'application/json';
         } else if (type === 'txt') {
             dataStr = tasks.map(t => `${t.text}${t.dueDate ? ' (Due: ' + t.dueDate + ')' : ''}${t.completed ? ' [Completed]' : ''}`).join('\n');
             filename += '.txt';
@@ -130,19 +133,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 `"${t.text.replace(/"/g, '""')}",${t.completed ? 'Yes' : 'No'},"${t.dueDate || ''}"`
             ).join('\n');
             filename += '.csv';
+            mimeType = 'text/csv';
         } else if (type === 'sql') {
             dataStr = 'INSERT INTO tasks (text, completed, due_date) VALUES\n' +
                 tasks.map(t =>
                     `('${t.text.replace(/'/g, "''")}', ${t.completed ? 1 : 0}, ${t.dueDate ? `'${t.dueDate}'` : 'NULL'})`
                 ).join(',\n') + ';';
             filename += '.sql';
+            mimeType = 'application/sql';
         }
-        const blob = new Blob([dataStr], { type: 'text/plain' });
+
+        const blob = new Blob([dataStr], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
 
